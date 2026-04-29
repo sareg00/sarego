@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Distribuidores Autorizados Sarego — Lubricante Mobil Original Garantizado" />
+  <title>Sarego | Distribuidores Autorizados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --negro: #111111;
+      --naranja: #F5A623;
+      --naranja-dim: rgba(245,166,35,0.12);
+      --blanco: #FFFFFF;
+      --panel: #161616;
+      --card: #1C1C1C;
+      --card-hover: #222222;
+      --borde: #2A2A2A;
+      --muted: #666666;
+      --muted2: #444444;
+      --azul: #4A90E2;
+      --verde: #1DB954;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: var(--negro);
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--borde);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .header-logo {
+      width: 38px; height: 38px; object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(245,166,35,0.2));
+    }
+    .header-text { flex: 1; }
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 1px;
+      color: var(--blanco);
+      line-height: 1;
+    }
+    .header-sub {
+      font-size: 10px; font-weight: 500;
+      color: var(--naranja); letter-spacing: 2px;
+      text-transform: uppercase; margin-top: 2px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none; color: var(--muted);
+      font-size: 13px; font-weight: 500;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .back-btn:hover { color: var(--blanco); }
+
+    /* ===== MOBIL BADGE ===== */
+    .mobil-badge {
+      background: linear-gradient(90deg, rgba(245,166,35,0.08), transparent);
+      border-bottom: 1px solid var(--borde);
+      padding: 8px 20px;
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .mobil-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--naranja); flex-shrink: 0;
+      animation: pulse 2s ease infinite;
+    }
+    .mobil-badge p {
+      font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.3px;
+    }
+    .mobil-badge strong { color: var(--naranja); }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ===== PANEL IZQUIERDO ===== */
+    .panel {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--borde);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Location Button */
+    .loc-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--borde);
+      flex-shrink: 0;
+    }
+    #loc-btn {
+      width: 100%;
+      background: var(--naranja);
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.15s;
+    }
+    #loc-btn:hover { background: #e09516; transform: translateY(-1px); }
+    #loc-btn:active { transform: translateY(0); }
+    #loc-btn:disabled { background: var(--borde); color: var(--muted); cursor: default; transform: none; }
+    .loc-status {
+      margin-top: 8px;
+      font-size: 11px; color: var(--muted);
+      text-align: center; min-height: 16px;
+      transition: color 0.3s;
+    }
+    .loc-status.active { color: var(--naranja); }
+    .loc-status.error { color: #e05a5a; }
+
+    /* Counter */
+    .counter {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--borde);
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .counter span { color: var(--blanco); font-weight: 600; }
+
+    /* List */
+    #list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #list::-webkit-scrollbar { width: 4px; }
+    #list::-webkit-scrollbar-track { background: transparent; }
+    #list::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 2px; }
+
+    /* Cards */
+    .card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--card);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      border: 1px solid transparent;
+    }
+    .card:hover { background: var(--card-hover); border-color: var(--borde); }
+    .card.active { border-color: var(--naranja); background: var(--naranja-dim); }
+    .card-rank {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--borde);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .card.top3 .card-rank { background: var(--naranja); color: #111; }
+    .card-body { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 12px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--blanco);
+    }
+    .card-dist {
+      font-size: 11px; color: var(--naranja);
+      margin-top: 2px; font-weight: 500;
+    }
+    .card-dist.unknown { color: var(--muted); }
+    .maps-btn {
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 10px; border-radius: 6px;
+      background: var(--borde);
+      color: var(--blanco); text-decoration: none;
+      font-size: 11px; font-weight: 600;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .maps-btn:hover { background: var(--naranja); color: #111; }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--card) 25%, var(--borde) 50%, var(--card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+      height: 60px;
+      margin-bottom: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    /* Error state */
+    .error-msg {
+      text-align: center; padding: 32px 16px;
+      color: var(--muted);
+    }
+    .error-msg .icon { font-size: 32px; margin-bottom: 8px; }
+    .error-msg p { font-size: 13px; line-height: 1.5; }
+
+    /* ===== MAPA ===== */
+    #map {
+      flex: 1;
+      background: var(--negro);
+    }
+
+    /* Leaflet overrides */
+    .leaflet-popup-content-wrapper {
+      background: #1E1E1E !important;
+      color: #fff !important;
+      border-radius: 8px !important;
+      border: 1px solid #2E2E2E !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      padding: 14px 16px !important;
+    }
+    .leaflet-popup-tip { background: #1E1E1E !important; }
+    .leaflet-popup-close-button { color: #666 !important; top: 8px !important; right: 10px !important; }
+    .popup-name {
+      font-size: 13px; font-weight: 700;
+      color: #fff; margin-bottom: 10px;
+      padding-right: 12px;
+      line-height: 1.3;
+    }
+    .popup-maps {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border-radius: 6px;
+      background: var(--naranja); color: #111;
+      text-decoration: none;
+      font-size: 12px; font-weight: 700;
+      transition: background 0.15s;
+    }
+    .popup-maps:hover { background: #e09516; }
+
+    /* Pulse animation for dots */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    /* User location ripple */
+    .user-ring {
+      border-radius: 50%;
+      animation: ripple 2s ease-out infinite;
+    }
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      html, body { height: auto; overflow: auto; }
+      .main { flex-direction: column; }
+      .panel {
+        width: 100%; border-right: none;
+        border-bottom: 1px solid var(--borde);
+      }
+      #map { height: 55vw; min-height: 250px; flex: none; }
+      #list { max-height: 60vh; overflow-y: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <img src="img/logo.png" alt="Sarego" class="header-logo" />
+    <div class="header-text">
+      <p class="header-title">Distribuidores Autorizados</p>
+      <p class="header-sub">Red Sarego</p>
+    </div>
+    <a href="index.html" class="back-btn">← Inicio</a>
+  </header>
+
+  <!-- MOBIL BADGE -->
+  <div class="mobil-badge">
+    <div class="mobil-dot"></div>
+    <p>Todos estos puntos de venta cuentan con <strong>Lubricante Mobil Original</strong> garantizado por Sarego</p>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- PANEL IZQUIERDO -->
+    <div class="panel">
+      <div class="loc-section">
+        <button id="loc-btn" onclick="pedirUbicacion()">
+          <span>📍</span> Encontrar el más cercano
+        </button>
+        <p class="loc-status" id="loc-status">Toca el botón para ver los distribuidores más cercanos a ti</p>
+      </div>
+      <div class="counter" id="counter">Cargando distribuidores...</div>
+      <div id="list">
+        <div class="skeleton"></div>
+        <div class="skeleton" style="opacity:.7"></div>
+        <div class="skeleton" style="opacity:.5"></div>
+        <div class="skeleton" style="opacity:.3"></div>
+      </div>
+    </div>
+
+    <!-- MAPA -->
+    <div id="map"></div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ── Estado global ──────────────────────────────────────────────────────────
+    let clientes = [];
+    let map, userMarker;
+    let userLat = null, userLng = null;
+    let activeCard = null;
+
+    // ── Inicializar mapa ───────────────────────────────────────────────────────
+    map = L.map('map', { zoomControl: true }).setView([10.48, -66.87], 12);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> | © <a href="https://carto.com">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    // ── Cargar datos ───────────────────────────────────────────────────────────
+    async function cargarClientes() {
+      try {
+        const res = await fetch('/.netlify/functions/clientes');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        clientes = await res.json();
+        agregarMarcadores();
+        renderLista(false);
+        document.getElementById('counter').innerHTML =
+          `<span>${clientes.length}</span> distribuidores autorizados`;
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+        document.getElementById('list').innerHTML = `
+          <div class="error-msg">
+            <div class="icon">⚠️</div>
+            <p>No se pudieron cargar los distribuidores.<br>Por favor recarga la página.</p>
+          </div>`;
+        document.getElementById('counter').textContent = 'Error al cargar';
+      }
+    }
+
+    // ── Marcadores en el mapa ──────────────────────────────────────────────────
+    function agregarMarcadores() {
+      clientes.forEach((c, i) => {
+        const popup = L.popup({ maxWidth: 220 }).setContent(`
+          <div class="popup-name">${c.nombre}</div>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}"
+             target="_blank" rel="noopener" class="popup-maps">
+            📍 Cómo llegar
+          </a>
+        `);
+
+        const marker = L.circleMarker([c.lat, c.lng], {
+          radius: 7,
+          fillColor: '#F5A623',
+          color: '#C4841A',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9,
+        }).bindPopup(popup).addTo(map);
+
+        marker.on('click', () => highlightCard(i));
+        c._marker = marker;
+        c._index = i;
+      });
+    }
+
+    // ── Geolocalización ────────────────────────────────────────────────────────
+    function pedirUbicacion() {
+      const btn = document.getElementById('loc-btn');
+      const status = document.getElementById('loc-status');
+
+      if (!navigator.geolocation) {
+        status.textContent = 'Tu navegador no soporta geolocalización';
+        status.className = 'loc-status error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Obteniendo ubicación...';
+      status.textContent = 'Esperando permiso de ubicación...';
+      status.className = 'loc-status';
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userLat = pos.coords.latitude;
+          userLng = pos.coords.longitude;
+
+          // Marcador de usuario con animación
+          if (userMarker) map.removeLayer(userMarker);
+          userMarker = L.circleMarker([userLat, userLng], {
+            radius: 10,
+            fillColor: '#4A90E2',
+            color: '#FFFFFF',
+            weight: 3,
+            fillOpacity: 1,
+          }).bindPopup('<strong style="color:#fff">📍 Tu ubicación</strong>').addTo(map);
+
+          map.setView([userLat, userLng], 13);
+
+          // Calcular distancias y ordenar
+          clientes = clientes.map(c => ({
+            ...c,
+            dist: haversine(userLat, userLng, c.lat, c.lng)
+          })).sort((a, b) => a.dist - b.dist);
+
+          // Reasignar índices después del sort
+          clientes.forEach((c, i) => { c._index = i; });
+
+          renderLista(true);
+
+          btn.innerHTML = '<span>✅</span> Mostrando más cercanos';
+          btn.style.background = '#1a1a1a';
+          btn.style.color = '#F5A623';
+          btn.style.border = '1px solid #F5A623';
+
+          status.textContent = `📍 Ordenados por distancia desde tu ubicación`;
+          status.className = 'loc-status active';
+        },
+        (err) => {
+          btn.disabled = false;
+          btn.innerHTML = '<span>📍</span> Intentar de nuevo';
+          const msgs = {
+            1: 'Permiso de ubicación denegado.',
+            2: 'No se pudo obtener la ubicación.',
+            3: 'Tiempo de espera agotado.',
+          };
+          status.textContent = msgs[err.code] || 'Error al obtener ubicación.';
+          status.className = 'loc-status error';
+        },
+        { timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    // ── Haversine ──────────────────────────────────────────────────────────────
+    function haversine(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // ── Render lista ───────────────────────────────────────────────────────────
+    function renderLista(conUbicacion) {
+      const listEl = document.getElementById('list');
+      if (!clientes.length) {
+        listEl.innerHTML = '<div class="error-msg"><p>No hay distribuidores disponibles.</p></div>';
+        return;
+      }
+
+      listEl.innerHTML = clientes.map((c, i) => {
+        const distText = conUbicacion
+          ? `${c.dist < 1 ? (c.dist * 1000).toFixed(0) + ' m' : c.dist.toFixed(1) + ' km'} de distancia`
+          : 'Pulsa "Encontrar más cercano"';
+        const distClass = conUbicacion ? '' : 'unknown';
+        const isTop3 = conUbicacion && i < 3;
+
+        return `
+          <div class="card${isTop3 ? ' top3' : ''}" id="card-${i}"
+               onclick="focusDistribuidor(${i})">
+            <div class="card-rank">${i + 1}</div>
+            <div class="card-body">
+              <p class="card-name" title="${c.nombre}">${c.nombre}</p>
+              <p class="card-dist ${distClass}">${distText}</p>
+            </div>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}"
+               target="_blank" rel="noopener" class="maps-btn"
+               onclick="event.stopPropagation()" title="Abrir en Google Maps">
+              Maps →
+            </a>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Focus en distribuidor ──────────────────────────────────────────────────
+    function focusDistribuidor(i) {
+      const c = clientes[i];
+      if (!c) return;
+
+      // Highlight card
+      if (activeCard !== null) {
+        const prev = document.getElementById(`card-${activeCard}`);
+        if (prev) prev.classList.remove('active');
+      }
+      const curr = document.getElementById(`card-${i}`);
+      if (curr) {
+        curr.classList.add('active');
+        activeCard = i;
+      }
+
+      // Mover mapa
+      map.setView([c.lat, c.lng], 16, { animate: true });
+      if (c._marker) c._marker.openPopup();
+    }
+
+    function highlightCard(originalIndex) {
+      // Encontrar el cliente por _index en la lista ordenada
+      const i = clientes.findIndex(c => c._index === originalIndex);
+      if (i < 0) return;
+
+      if (activeCard !== null) {
+        const prev = document.getElementById(`card-${activeCard}`);
+        if (prev) prev.classList.remove('active');
+      }
+      const curr = document.getElementById(`card-${i}`);
+      if (curr) {
+        curr.classList.add('active');
+        curr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        activeCard = i;
+      }
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    cargarClientes();
+  </script>
+</body>
+</html>

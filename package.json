@@ -1,0 +1,11 @@
+{
+  "name": "sarego-distribuidores",
+  "version": "1.0.0",
+  "description": "Sarego — Linktree y mapa de distribuidores autorizados",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
