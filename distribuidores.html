@@ -89,17 +89,13 @@
     }
     .search-box {
       width: 100%; border: 1.5px solid var(--f2);
-      border-radius: 8px; padding: 9px 12px 9px 36px;
+      border-radius: 8px; padding: 9px 12px;
       font-family: 'DM Sans', sans-serif; font-size: 13px;
       background: var(--white); color: var(--t1);
       outline: none; transition: border-color .15s;
     }
     .search-box:focus { border-color: var(--blue); }
     .search-box::placeholder { color: var(--t3); }
-    .search-icon {
-      position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
-      font-size: 14px; pointer-events: none;
-    }
     .search-rel { position: relative; }
 
     /* ── FILTERS ─────────────────────────────────── */
@@ -257,7 +253,6 @@
 
     <div class="search-wrap">
       <div class="search-rel">
-        <span class="search-icon">🔍</span>
         <input class="search-box" id="searchBox" type="text"
                placeholder="Buscar por nombre..."
                oninput="filtrar()" autocomplete="off" />
@@ -269,7 +264,7 @@
         📍 Más cercano
       </button>
       <button class="filter-btn" id="btnAZ" onclick="setFiltro('az')">
-        🔤 A — Z
+        A — Z
       </button>
     </div>
 
@@ -319,12 +314,17 @@
       try {
         const res = await fetch('/.netlify/functions/clientes');
         if (!res.ok) throw new Error(res.status);
-        todosClientes = await res.json();
-        // Asignar índice original para pin referencing
+        const raw = await res.json();
+        // Deduplicar por nombre + coordenadas redondeadas
+        const vistos = new Set();
+        todosClientes = raw.filter(c => {
+          const key = `${c.nombre.trim().toUpperCase()}|${(+c.lat).toFixed(4)}|${(+c.lng).toFixed(4)}`;
+          if (vistos.has(key)) return false;
+          vistos.add(key); return true;
+        });
         todosClientes.forEach((c, i) => { c._id = i; });
         agregarPins();
         document.getElementById('badge').textContent = todosClientes.length;
-        // Geolocation se pide al cargar
         pedirUbicacion();
       } catch (e) {
         document.getElementById('lista').innerHTML =
@@ -332,7 +332,6 @@
            <p>No se pudieron cargar los puntos de venta.<br>Por favor recarga la página.</p></div>`;
         document.getElementById('count').textContent = 'Error al cargar';
         document.getElementById('badge').textContent = '!';
-        document.getElementById('geoStatus').textContent = '';
         document.getElementById('geoStatus').className = 'geo-status hide';
       }
     }
@@ -367,7 +366,6 @@
           userLat = pos.coords.latitude;
           userLng = pos.coords.longitude;
           geoListo = true;
-          // Pin usuario
           if (userMarker) mapa.removeLayer(userMarker);
           userMarker = L.circleMarker([userLat, userLng], {
             radius: 10, fillColor: '#ED1B2D', color: '#fff', weight: 3, fillOpacity: 1,
@@ -376,15 +374,29 @@
           todosClientes.forEach(c => {
             c.dist = haversine(userLat, userLng, c.lat, c.lng);
           });
-          // Activar botón
           document.getElementById('btnCercano').classList.remove('geo-pending');
-          document.getElementById('geoStatus').textContent = '📍 Ordenado por distancia a tu ubicación';
+          document.getElementById('geoStatus').textContent = 'Ordenado por distancia a tu ubicación';
           document.getElementById('geoStatus').className = 'geo-status ok';
           filtroActual = 'cercano';
           renderLista();
-          // Centrar en el más cercano
+          // Abrir ficha del más cercano con popup personalizado
           const mas = listaActual()[0];
-          if (mas) mapa.setView([mas.lat, mas.lng], 14, { animate: true });
+          if (mas) {
+            const d = mas.dist < 1
+              ? `${(mas.dist*1000).toFixed(0)} m`
+              : `${mas.dist.toFixed(1)} km`;
+            mas._marker.setPopupContent(`
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">
+                El más cercano · ${d}
+              </div>
+              <div class="popup-name">${mas.nombre}</div>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${mas.lat},${mas.lng}"
+                 target="_blank" rel="noopener" class="popup-go">📍 Cómo llegar</a>
+            `);
+            mapa.setView([mas.lat, mas.lng], 15, { animate: true });
+            setTimeout(() => mas._marker.openPopup(), 500);
+            marcarCard(0);
+          }
         },
         err => { fallbackSinGeo(err); },
         { timeout: 8000, maximumAge: 60000 }
@@ -411,14 +423,21 @@
     // ── FILTROS ───────────────────────────────────
     function setFiltro(f) {
       if (f === 'cercano' && !geoListo) {
-        // Reintentar geo
-        document.getElementById('geoStatus').textContent = '⏳ Detectando tu ubicación...';
+        document.getElementById('geoStatus').textContent = 'Detectando tu ubicación...';
         document.getElementById('geoStatus').className = 'geo-status';
         pedirUbicacion(); return;
       }
       filtroActual = f;
       document.getElementById('btnCercano').classList.toggle('active', f === 'cercano');
       document.getElementById('btnAZ').classList.toggle('active', f === 'az');
+      // Mostrar u ocultar mensaje de geo según filtro
+      const st = document.getElementById('geoStatus');
+      if (f === 'az') {
+        st.className = 'geo-status hide';
+      } else if (geoListo) {
+        st.textContent = 'Ordenado por distancia a tu ubicación';
+        st.className = 'geo-status ok';
+      }
       renderLista();
     }
 
