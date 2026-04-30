@@ -58,31 +58,30 @@
       text-transform: uppercase; color: rgba(255,255,255,.6); margin-top: 2px;
     }
     .h-mad4 {
-      height: 32px; width: auto; object-fit: contain;
-      filter: brightness(0) invert(1); opacity: .9;
+      height: 46px; width: auto; object-fit: contain;
     }
 
     /* ── RED STRIP ───────────────────────────────── */
     .strip {
       position: fixed; top: 65px; left: 0; right: 0;
       background: var(--red);
-      padding: 5px 16px;
+      padding: 7px 16px;
       display: flex; align-items: center; gap: 8px;
       z-index: 599;
     }
-    .strip p { font-size: 10.5px; color: rgba(255,255,255,.9); font-weight: 500; }
+    .strip p { font-size: 13px; color: rgba(255,255,255,.95); font-weight: 500; }
     .strip strong { color: var(--white); font-weight: 700; }
 
     /* ── MAP ─────────────────────────────────────── */
     #map {
       position: fixed;
-      top: 92px; left: 0; right: 0; bottom: 0;
+      top: 98px; left: 0; right: 0; bottom: 0;
       z-index: 1;
     }
 
     /* ── DRAWER ──────────────────────────────────── */
     .drawer {
-      position: fixed; top: 92px; left: 0; bottom: 0;
+      position: fixed; top: 98px; left: 0; bottom: 0;
       width: 350px; max-width: 93vw;
       background: var(--white);
       z-index: 500;
@@ -226,8 +225,9 @@
 
     @media (max-width: 480px) {
       .drawer { width: 100vw; max-width: 100vw; }
-      .h-mad4 { height: 26px; }
+      .h-mad4 { height: 36px; }
       .h-mobil { height: 26px; }
+      .strip p { font-size: 11.5px; }
     }
   </style>
 </head>
